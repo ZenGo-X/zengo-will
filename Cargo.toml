@@ -1,0 +1,27 @@
+[package]
+name = "zengo-will"
+version = "0.1.0"
+authors = ["Denis Varlakov <dsurv@yandex.ru>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tonic = "0.4"
+prost = "0.7"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+async-trait = "0.1"
+sled = "0.34"
+
+thiserror = "1.0"
+lazy_static = "1.4"
+
+vdf = { git = "https://github.com/ZenGo-X/vdf", branch = "main" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+tempfile = "3.2"
+
+[build-dependencies]
+tonic-build = "0.4"

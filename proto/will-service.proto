@@ -1,0 +1,51 @@
+syntax = "proto3";
+package will;
+
+service Will {
+    rpc Ping    (PingRequest)
+        returns (PingResponse);
+    rpc SaveServerShare (SaveServerShareRequest)
+        returns         (SaveServerShareResponse);
+    rpc VerifyServerShare (VerifyServerShareRequest)
+        returns           (VerifyServerShareResponse);
+    rpc GetChallenge (GetChallengeRequest)
+        returns      (GetChallengeResponse);
+    rpc ObtainServerSecretShare (ObtainServerSecretShareRequest)
+        returns                 (ObtainServerSecretShareResponse);
+}
+
+// Ping
+message PingRequest {}
+message PingResponse {}
+
+// SaveServerShare
+message SaveServerShareRequest {
+    bytes PublicKey = 1;
+    bytes ServerSecretShare = 2;
+}
+message SaveServerShareResponse {}
+
+// VerifyServerShare
+message VerifyServerShareRequest {
+    bytes PublicKey = 1;
+    bytes ClientSecretShare = 2;
+}
+message VerifyServerShareResponse {
+    bool Valid = 1;
+}
+
+// GetChallenge
+message GetChallengeRequest {}
+message GetChallengeResponse {
+    bytes Challenge = 1;
+}
+
+// ObtainServerSecretShare
+message ObtainServerSecretShareRequest {
+    bytes PublicKey = 1;
+    bytes SecretClientShare = 2;
+    bytes ChallengeSolution = 3;
+}
+message ObtainServerSecretShareResponse {
+    bytes ServerSecretShare = 1;
+}
