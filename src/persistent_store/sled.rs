@@ -367,4 +367,25 @@ mod persistent_store_should {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn not_allow_server_share_overwriting() -> Result<()> {
+        let (store, _guard) = open_store().await?;
+
+        let pk = &b"dummy public key"[..];
+        let sk1 = &b"dummy secret share"[..];
+        let sk2 = &b"dummy secret share but different"[..];
+
+        store.add_server_secret_share(pk, sk1).await?;
+        let result = store.add_server_secret_share(pk, sk2).await;
+        assert!(result.is_err());
+
+        let actual_sk = store.get_server_secret_share(pk).await?;
+        assert_eq!(
+            Some(sk1),
+            actual_sk.as_ref().map(|sk| sk.secret_share().as_ref())
+        );
+
+        Ok(())
+    }
 }
