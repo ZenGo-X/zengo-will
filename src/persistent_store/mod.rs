@@ -12,8 +12,6 @@ use crate::sealed::Sealed;
 
 #[async_trait]
 pub trait PersistentStore<P: ECPoint>: Clone + Sync + Send {
-    type PublicKey: AsRef<[u8]>;
-    type SecretShare: AsRef<[u8]>;
     type Error;
 
     /// Opens existing persistent_store or creates a new one on file system.
@@ -32,7 +30,7 @@ pub trait PersistentStore<P: ECPoint>: Clone + Sync + Send {
     async fn get_server_secret_share(
         &self,
         public_key: P,
-    ) -> Result<Option<Sealed<Self::PublicKey, Self::SecretShare>>, Self::Error>;
+    ) -> Result<Option<Sealed<P>>, Self::Error>;
 
     /// Increases ping counter by 1
     ///

@@ -8,6 +8,7 @@ use derivative::Derivative;
 
 use curv::arithmetic::traits::Converter;
 use curv::elliptic::curves::traits::{ECPoint, ECScalar};
+use curv::BigInt;
 
 use super::{Challenge, PersistentStore, SetChallengeError};
 use crate::sealed::Sealed;
@@ -38,10 +39,8 @@ impl<P> SledDB<P> {
 impl<P> PersistentStore<P> for SledDB<P>
 where
     P: ECPoint + Send,
-    P::Scalar: Send,
+    P::Scalar: Send + Clone,
 {
-    type PublicKey = sled::IVec;
-    type SecretShare = sled::IVec;
     type Error = sled::Error;
 
     async fn open(path: PathBuf) -> sled::Result<Self> {
@@ -76,18 +75,16 @@ where
         Ok(())
     }
 
-    async fn get_server_secret_share(
-        &self,
-        public_key: P,
-    ) -> sled::Result<Option<Sealed<Self::PublicKey, Self::SecretShare>>> {
+    async fn get_server_secret_share(&self, public_key: P) -> sled::Result<Option<Sealed<P>>> {
         let public_key_bytes = public_key.pk_to_key_slice();
         let secret = match self.secrets.get(public_key_bytes.as_slice())? {
             Some(s) => s,
             None => return Ok(None),
         };
+        let secret = BigInt::from_bytes(&secret);
         Ok(Some(Sealed::new(
-            sled::IVec::from(public_key_bytes.as_slice()),
-            secret,
+            public_key,
+            <P::Scalar as ECScalar>::from(&secret),
         )))
     }
 
