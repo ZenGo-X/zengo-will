@@ -6,10 +6,12 @@ use std::{fmt, io};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use curv::elliptic::curves::traits::ECPoint;
+
 use crate::sealed::Sealed;
 
 #[async_trait]
-pub trait PersistentStore: Clone + Sync + Send {
+pub trait PersistentStore<P: ECPoint>: Clone + Sync + Send {
     type PublicKey: AsRef<[u8]>;
     type SecretShare: AsRef<[u8]>;
     type Error;
@@ -22,14 +24,14 @@ pub trait PersistentStore: Clone + Sync + Send {
     /// Returns `Error::AlreadyExist` if there is a share associated with given `public_key`.
     async fn add_server_secret_share(
         &self,
-        public_key: &[u8],
-        server_secret_share: &[u8],
+        public_key: P,
+        server_secret_share: P::Scalar,
     ) -> Result<(), Self::Error>;
 
     /// Returns a server's secret share associated with given `public_key`
     async fn get_server_secret_share(
         &self,
-        public_key: &[u8],
+        public_key: P,
     ) -> Result<Option<Sealed<Self::PublicKey, Self::SecretShare>>, Self::Error>;
 
     /// Increases ping counter by 1

@@ -1759,6 +1759,8 @@ name = "zengo-will"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "curv",
+ "derivative",
  "lazy_static",
  "prost",
  "serde",
