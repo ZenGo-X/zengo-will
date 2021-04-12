@@ -1,0 +1,20 @@
+syntax = "proto3";
+package testator;
+
+service TestatorAPI {
+    rpc Ping    (PingRequest)
+        returns (PongResponse);
+    rpc SaveServerShare (SaveServerShareRequest)
+        returns         (SaveServerShareResponse);
+}
+
+// Ping-Pong
+message PingRequest {}
+message PongResponse {}
+
+// SaveServerShare
+message SaveServerShareRequest {
+  bytes PublicKey = 1;
+  bytes ServerSecretShare = 2;
+}
+message SaveServerShareResponse {}

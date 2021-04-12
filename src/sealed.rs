@@ -23,8 +23,16 @@ where
     }
 
     /// Verifies that client share matches server share
-    pub fn verify(&self, client_share_pk: P) -> bool {
+    fn verify(&self, client_share_pk: P) -> bool {
         client_share_pk * self.server_share.clone() == self.public_key
+    }
+
+    pub fn verify_and_proof(&self, client_share_pk: P) -> Option<P> {
+        if self.verify(client_share_pk) {
+            Some(P::generator() * self.server_share.clone())
+        } else {
+            None
+        }
     }
 
     /// Tries to open sealed secret share

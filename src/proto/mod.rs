@@ -1,1 +1,2 @@
-mod will;
+pub mod beneficiary;
+pub mod testator;

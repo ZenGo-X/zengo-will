@@ -1,50 +1,37 @@
 syntax = "proto3";
-package will;
+package beneficiary;
 
-service Will {
-    rpc Ping    (PingRequest)
-        returns (PingResponse);
-    rpc SaveServerShare (SaveServerShareRequest)
-        returns         (SaveServerShareResponse);
+service BeneficiaryAPI {
     rpc VerifyServerShare (VerifyServerShareRequest)
         returns           (VerifyServerShareResponse);
     rpc GetChallenge (GetChallengeRequest)
-        returns      (GetChallengeResponse);
+        returns      (Challenge);
     rpc ObtainServerSecretShare (ObtainServerSecretShareRequest)
         returns                 (ObtainServerSecretShareResponse);
 }
-
-// Ping
-message PingRequest {}
-message PingResponse {}
-
-// SaveServerShare
-message SaveServerShareRequest {
-    bytes PublicKey = 1;
-    bytes ServerSecretShare = 2;
-}
-message SaveServerShareResponse {}
-
 // VerifyServerShare
 message VerifyServerShareRequest {
     bytes PublicKey = 1;
-    bytes ClientSecretShare = 2;
+    bytes ClientPublicShare = 2;
 }
 message VerifyServerShareResponse {
-    bool Valid = 1;
+    bytes ServerPublicShare = 1;
 }
 
 // GetChallenge
 message GetChallengeRequest {}
-message GetChallengeResponse {
-    bytes Challenge = 1;
+
+message Challenge {
+    bytes Id = 1;
+    bytes Challenge = 2;
 }
 
 // ObtainServerSecretShare
 message ObtainServerSecretShareRequest {
     bytes PublicKey = 1;
-    bytes SecretClientShare = 2;
-    bytes ChallengeSolution = 3;
+    bytes ClientPublicShare = 2;
+    Challenge SolvedChallenge = 3;
+    bytes Solution = 4;
 }
 message ObtainServerSecretShareResponse {
     bytes ServerSecretShare = 1;
