@@ -70,13 +70,21 @@ async fn main() -> anyhow::Result<()> {
         .serve(testator_addr)
         .fuse();
 
+    let ctrl_c = tokio::signal::ctrl_c().fuse();
+
     futures::pin_mut!(beneficiary_server);
     futures::pin_mut!(testator_server);
+    futures::pin_mut!(ctrl_c);
 
+    println!("Server started. Use Ctrl-C to exit.");
     for _ in 0u8..2 {
         let (which_server, result): (&str, Result<(), tonic::transport::Error>) = futures::select! {
             result = beneficiary_server => ("beneficiary", result),
             result = testator_server => ("testator", result),
+            _ = ctrl_c => {
+                eprintln!("Execution terminated by Ctrl-C");
+                break
+            }
         };
         eprintln!("{} server terminated: {:?}", which_server, result)
     }
