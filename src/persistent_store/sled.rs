@@ -227,8 +227,6 @@ mod persistent_store_should {
     //! cargo test -- --test-threads=1
     //! ```
 
-    use std::io;
-
     use curv::elliptic::curves::secp256_k1::{FE, GE};
 
     use super::{PersistentStore, SledDB};
@@ -385,22 +383,22 @@ mod persistent_store_should {
         Ok(())
     }
 
-    // #[tokio::test]
-    // async fn remember_server_secret_share() -> Result<()> {
-    //     let (store, _guard) = open_store().await?;
-    //
-    //     store
-    //         .add_server_secret_share(JOINT_PK.clone(), SERVER_SHARE_SK.clone())
-    //         .await?;
-    //
-    //     let actual_sk = store.get_server_secret_share(JOINT_PK.clone()).await?;
-    //     assert_eq!(
-    //         Some(SERVER_SHARE_SK.clone()),
-    //         actual_sk.as_ref().map(|sk| sk.secret_share().as_ref())
-    //     );
-    //
-    //     Ok(())
-    // }
+    #[tokio::test]
+    async fn remember_server_secret_share() -> Result<()> {
+        let (store, _guard) = open_store().await?;
+
+        store
+            .add_server_secret_share(JOINT_PK.clone(), SERVER_SHARE_SK.clone())
+            .await?;
+
+        let actual_sk = store.get_server_secret_share(JOINT_PK.clone()).await?;
+        assert_eq!(
+            Some(SERVER_SHARE_SK.clone()),
+            actual_sk.map(|sk| sk.secret_share().clone())
+        );
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn return_none_if_server_share_not_found() -> Result<()> {
@@ -412,24 +410,24 @@ mod persistent_store_should {
         Ok(())
     }
 
-    // #[tokio::test]
-    // async fn not_allow_server_share_overwriting() -> Result<()> {
-    //     let (store, _guard) = open_store().await?;
-    //
-    //     store
-    //         .add_server_secret_share(JOINT_PK.clone(), SERVER_SHARE_SK.clone())
-    //         .await?;
-    //     let result = store
-    //         .add_server_secret_share(JOINT_PK.clone(), CLIENT_SHARE_SK.clone())
-    //         .await;
-    //     assert!(result.is_err());
-    //
-    //     let actual_sk = store.get_server_secret_share(JOINT_PK.clone()).await?;
-    //     assert_eq!(
-    //         Some(SERVER_SHARE_SK.clone()),
-    //         actual_sk.as_ref().map(|sk| sk.secret_share().as_ref())
-    //     );
-    //
-    //     Ok(())
-    // }
+    #[tokio::test]
+    async fn not_allow_server_share_overwriting() -> Result<()> {
+        let (store, _guard) = open_store().await?;
+
+        store
+            .add_server_secret_share(JOINT_PK.clone(), SERVER_SHARE_SK.clone())
+            .await?;
+        let result = store
+            .add_server_secret_share(JOINT_PK.clone(), CLIENT_SHARE_SK.clone())
+            .await;
+        assert!(result.is_err());
+
+        let actual_sk = store.get_server_secret_share(JOINT_PK.clone()).await?;
+        assert_eq!(
+            Some(SERVER_SHARE_SK.clone()),
+            actual_sk.as_ref().map(|sk| sk.secret_share().clone())
+        );
+
+        Ok(())
+    }
 }

@@ -1,6 +1,6 @@
+use std::fmt;
 use std::marker::PhantomData;
 use std::mem::size_of;
-use std::{fmt, io};
 
 use async_trait::async_trait;
 
@@ -27,7 +27,11 @@ pub struct BeneficiaryServer<S, P> {
     _ph: PhantomData<fn() -> P>,
 }
 
-impl<S, P> BeneficiaryServer<S, P> {
+impl<S, P> BeneficiaryServer<S, P>
+where
+    S: PersistentStore<P>,
+    P: ECPoint,
+{
     pub fn new(vdf_setup: vdf::SetupForVDF, persistent_store: S) -> Self {
         Self {
             vdf_setup,
@@ -135,9 +139,9 @@ where
         let request = request.into_inner();
 
         let public_key = P::from_bytes(&request.public_key)
-            .map_err(|e| Status::invalid_argument("invalid public key"))?;
+            .map_err(|_e| Status::invalid_argument("invalid public key"))?;
         let client_public_share = P::from_bytes(&request.client_public_share)
-            .map_err(|e| Status::invalid_argument("invalid public key"))?;
+            .map_err(|_e| Status::invalid_argument("invalid public key"))?;
 
         let solved_challenge = request
             .solved_challenge

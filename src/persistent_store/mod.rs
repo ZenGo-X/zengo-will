@@ -1,7 +1,7 @@
-mod sled;
+pub mod sled;
 
+use std::fmt;
 use std::path::PathBuf;
-use std::{fmt, io};
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
