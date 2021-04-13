@@ -287,9 +287,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35f15e1a0699dd988fed910dd78fdc6407f44654cd12589c91fa44ea67d9159"
 
 [[package]]
-name = "curv"
+name = "curv-kzen"
 version = "0.6.1"
-source = "git+https://github.com/ZenGo-X/curv?tag=v0.6.1#44610b11b83f35d073a06fd73ee96a226210c52a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f699a6abe1c4c3d7e5fcfc23933fc95aa1e35f90191f37a255d471aca45c4c7"
 dependencies = [
  "blake2b_simd",
  "cryptoxide",
@@ -1410,6 +1411,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsa-vdf"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b4709125501fc9398a1f39e9c2af09ab178ecf72681e782d04c9d469e23bca6"
+dependencies = [
+ "curv-kzen",
+ "serde",
+]
+
+[[package]]
 name = "rust-crypto"
 version = "0.2.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1950,15 +1961,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
-name = "vdf"
-version = "0.0.1"
-source = "git+https://github.com/ZenGo-X/vdf?branch=main#e0409f4ca5a2e8d2b0eec4a4a464ebf77493af54"
-dependencies = [
- "curv",
- "serde",
-]
-
-[[package]]
 name = "vec_map"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2104,12 +2106,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "curv",
+ "curv-kzen",
  "derivative",
  "futures",
  "lazy_static",
  "prost",
  "ring",
+ "rsa-vdf",
  "serde",
  "serde_json",
  "sled",
@@ -2119,7 +2122,6 @@ dependencies = [
  "tokio",
  "tonic",
  "tonic-build",
- "vdf",
 ]
 
 [[package]]

@@ -44,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
         .parse()
         .context("construct testator addr")?;
 
-    let vdf_setup = vdf::SetupForVDF::public_setup(&args.t.into());
+    let vdf_setup = rsa_vdf::SetupForVDF::public_setup(&args.t.into());
 
     let store = SledDB::<GE>::open(args.persistent_store)
         .await

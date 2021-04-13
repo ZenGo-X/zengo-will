@@ -43,7 +43,7 @@ where
         self,
         current_challenge: &Challenge,
         solved_challenge: &Challenge,
-        challenge_solution: vdf::SolvedVDF,
+        challenge_solution: rsa_vdf::SolvedVDF,
         client_share_pk: P,
     ) -> Result<P::Scalar, OpenError> {
         if current_challenge.id > solved_challenge.id {
@@ -68,7 +68,7 @@ where
 
 pub enum OpenError {
     ClientShareDoesntMatchServerShare,
-    IncorrectSolution(vdf::utilities::ErrorReason),
+    IncorrectSolution(rsa_vdf::utilities::ErrorReason),
     OldChallenge,
     InvalidChallenge,
 }

@@ -63,7 +63,7 @@ pub trait PersistentStore<P: ECPoint>: Clone + Sync + Send {
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct Challenge {
     pub id: u128,
-    pub challenge: vdf::UnsolvedVDF,
+    pub challenge: rsa_vdf::UnsolvedVDF,
 }
 
 #[derive(Debug)]

@@ -22,7 +22,7 @@ use crate::proto::testator::{
 use crate::sealed::OpenError;
 
 pub struct BeneficiaryServer<S, P> {
-    vdf_setup: vdf::SetupForVDF,
+    vdf_setup: rsa_vdf::SetupForVDF,
     store: S,
     _ph: PhantomData<fn() -> P>,
 }
@@ -32,7 +32,7 @@ where
     S: PersistentStore<P>,
     P: ECPoint,
 {
-    pub fn new(vdf_setup: vdf::SetupForVDF, persistent_store: S) -> Self {
+    pub fn new(vdf_setup: rsa_vdf::SetupForVDF, persistent_store: S) -> Self {
         Self {
             vdf_setup,
             store: persistent_store,
@@ -107,7 +107,7 @@ where
         })?;
         let challenge = crate::persistent_store::Challenge {
             id,
-            challenge: vdf::SetupForVDF::pick_challenge(&self.vdf_setup),
+            challenge: rsa_vdf::SetupForVDF::pick_challenge(&self.vdf_setup),
         };
         let challenge = match self.store.set_challenge(challenge.clone()).await {
             Ok(()) => challenge,
