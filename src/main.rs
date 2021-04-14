@@ -24,18 +24,26 @@ mod server;
 async fn main() -> anyhow::Result<()> {
     let args: cli::App = StructOpt::from_args();
 
-    let cert = fs::read(args.cert)
-        .await
-        .context("read server certificate")?;
-    let key = fs::read(args.key)
-        .await
-        .context("read server private key")?;
-    let testator_ca = fs::read(args.testator_ca)
-        .await
-        .context("read testator ca")?;
+    if args.insecure {
+        eprintln!("WARN! Running in insecure mode")
+    }
 
-    let server_identity = Identity::from_pem(cert, key);
-    let testator_ca = Certificate::from_pem(testator_ca);
+    let server_identity = match (args.cert, args.key) {
+        (Some(cert), Some(key)) => {
+            let cert = fs::read(cert).await.context("read server certificate")?;
+            let key = fs::read(key).await.context("read server private key")?;
+            Some(Identity::from_pem(cert, key))
+        }
+        _ => None,
+    };
+
+    let testator_ca = match args.testator_ca {
+        Some(testator_ca) => {
+            let testator_ca = fs::read(testator_ca).await.context("read testator ca")?;
+            Some(Certificate::from_pem(testator_ca))
+        }
+        None => None,
+    };
 
     let beneficiary_addr = format!("0.0.0.0:{}", args.beneficiary_api_port)
         .parse()
@@ -52,20 +60,28 @@ async fn main() -> anyhow::Result<()> {
     let beneficiary_server = server::BeneficiaryServer::new(vdf_setup, store.clone());
     let testator_server = server::TestatorServer::new(store);
 
-    let beneficiary_server = Server::builder()
-        .tls_config(ServerTlsConfig::new().identity(server_identity.clone()))
-        .context("set TLS config")?
+    let mut beneficiary_server_builder = match server_identity.clone() {
+        Some(server_identity) => Server::builder()
+            .tls_config(ServerTlsConfig::new().identity(server_identity.clone()))
+            .context("set TLS config")?,
+        None => Server::builder(),
+    };
+    let beneficiary_server = beneficiary_server_builder
         .add_service(BeneficiaryApiServer::new(beneficiary_server))
         .serve(beneficiary_addr)
         .fuse();
 
-    let testator_server = Server::builder()
-        .tls_config(
-            ServerTlsConfig::new()
-                .identity(server_identity)
-                .client_ca_root(testator_ca),
-        )
-        .context("set TLS config")?
+    let mut testator_server_builder = match (server_identity, testator_ca) {
+        (Some(server_identity), Some(testator_ca)) => Server::builder()
+            .tls_config(
+                ServerTlsConfig::new()
+                    .identity(server_identity)
+                    .client_ca_root(testator_ca),
+            )
+            .context("set TLS config")?,
+        _ => Server::builder(),
+    };
+    let testator_server = testator_server_builder
         .add_service(TestatorApiServer::new(testator_server))
         .serve(testator_addr)
         .fuse();
