@@ -54,6 +54,12 @@ async fn main() -> anyhow::Result<()> {
 
     let vdf_setup = rsa_vdf::SetupForVDF::public_setup(&args.t.into());
 
+    if let Some(dir) = args.persistent_store.parent() {
+        fs::create_dir_all(dir)
+            .await
+            .context("create parent dir for persistent store")?
+    }
+
     let store = SledDB::<GE>::open(args.persistent_store)
         .await
         .context("open persistent store")?;
