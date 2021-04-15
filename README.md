@@ -14,9 +14,9 @@
    
    This will output server and client shares:
    ```text
-   Beneficiary's share: TBD_CS
-   Testator's share:    TBD_SS
-   Public key:          TBD_PK
+   Beneficiary's share: c4834b14beea22181406396c09a380a5ff8c0e579ed0ab8fe60473f6f119931e
+   Testator's share:    adff4b84bfabdc6979fe306719247a8d61ea5fe1f2fa36f6e7ef85f2e4592146
+   Public key:          94fcb56210eae5d57ea0f3dcf3fba2b92a33ed92cccbd0b960e04e3fc8ee9dcdbd366492ee3c1b67849c76a93b5ecf59458302627bff1db670a386fa21b86008
    ```
    
 3. Testator sends to Will its share
@@ -39,10 +39,7 @@
    cargo run --example demo -- beneficiary claim --secret-share TBD_CS --public-key TBD_PK
    ```
    
-   It will output:
-   ```text
-   Failed: Testator is alive
-   ```
+   Error message will be printed in the terminal saying testator is alive.
 
 7. Kill testator by sending Ctrl-C to the terminal from step 5. Now beneficiary is able to claim a counter-party's
    secret share:
@@ -52,5 +49,8 @@
 
    Outputs:
    ```text
-   Obtained testator secret: TBD_SS
+   Retrieving challenge from the server
+   Solving challenge
+   Challenge solved. Sending it to server
+   Testator secret share: adff4b84bfabdc6979fe306719247a8d61ea5fe1f2fa36f6e7ef85f2e4592146
    ```

@@ -90,7 +90,7 @@ where
         match self.store.get_challenge().await {
             Ok(Some(challenge)) => {
                 let id = challenge.id.to_le_bytes().to_vec();
-                let challenge = serde_json::to_vec(&challenge)
+                let challenge = serde_json::to_vec(&challenge.challenge)
                     .map_err(|e| Status::internal(format!("serialize challenge: {}", e)))?;
                 return Ok(Response::new(Challenge { id, challenge }));
             }
@@ -127,7 +127,7 @@ where
         };
 
         let id = challenge.id.to_le_bytes().to_vec();
-        let challenge = serde_json::to_vec(&challenge)
+        let challenge = serde_json::to_vec(&challenge.challenge)
             .map_err(|e| Status::internal(format!("serialize challenge: {}", e)))?;
         return Ok(Response::new(Challenge { id, challenge }));
     }
@@ -146,10 +146,11 @@ where
         let solved_challenge = request
             .solved_challenge
             .ok_or_else(|| Status::invalid_argument("solved challenge is not provided"))?;
-        let solved_challenge_id = [0u8; size_of::<u128>()];
+        let mut solved_challenge_id = [0u8; size_of::<u128>()];
         if solved_challenge.id.len() != solved_challenge_id.len() {
             return Err(Status::invalid_argument("invalid solved challenge id"));
         }
+        solved_challenge_id.copy_from_slice(&solved_challenge.id);
         let solved_challenge_id = u128::from_le_bytes(solved_challenge_id);
         let solved_challenge = serde_json::from_slice(&solved_challenge.challenge)
             .map_err(|_e| Status::invalid_argument("invalid solved challenge"))?;

@@ -21,10 +21,13 @@ async fn main() -> anyhow::Result<()> {
     match args {
         cli::App::GenShare => emulate_keygen().await,
         cli::App::Testator(cli::TestatorCmd::SaveShare(args)) => testator_save_share(args).await,
+        cli::App::Testator(cli::TestatorCmd::SendKeepalive(args)) => {
+            testator_send_keepalive(args).await
+        }
         cli::App::Beneficiary(cli::BeneficiaryCmd::Verify(args)) => {
             beneficiary_verify_share(args).await
         }
-        _ => todo!(),
+        cli::App::Beneficiary(cli::BeneficiaryCmd::Claim(args)) => beneficiary_claim(args).await,
     }
 }
 
@@ -111,5 +114,70 @@ async fn beneficiary_verify_share(args: cli::BeneficiaryVerify) -> anyhow::Resul
     } else {
         bail!("Server provided incorrect proof!");
     }
+    Ok(())
+}
+
+async fn testator_send_keepalive(args: cli::TestatorSendKeepalive) -> anyhow::Result<()> {
+    let mut server = connect_to_testator_api(args.will_server).await?;
+
+    for i in 1u64.. {
+        server
+            .ping(proto::testator::PingRequest {})
+            .await
+            .context(format!("sending ping {}", i))?;
+        println!("Ping {} sent", i);
+        tokio::time::sleep(args.every).await
+    }
+
+    bail!("testator tired (it sent {} pings!!)", u64::MAX)
+}
+
+async fn beneficiary_claim(args: cli::BeneficiaryClaim) -> anyhow::Result<()> {
+    let mut server = connect_to_beneficiary_api(args.will_server).await?;
+
+    let public_key_point: GE =
+        GE::from_bytes(&args.public_key).map_err(|_e| anyhow!("invalid public key"))?;
+
+    let client_secret_share: FE = ECScalar::from(&BigInt::from_bytes(&args.secret_share));
+    let client_public_share: GE = GE::generator() * client_secret_share;
+    let client_public_share_bytes = &client_public_share.pk_to_key_slice()[1..];
+
+    eprintln!("Retrieving challenge from the server");
+    let solving_challenge = server
+        .get_challenge(Request::new(proto::beneficiary::GetChallengeRequest {}))
+        .await
+        .context("get challenge from server")?
+        .into_inner();
+    let challenge: rsa_vdf::UnsolvedVDF =
+        serde_json::from_slice(&solving_challenge.challenge).context("parse challenge")?;
+    eprintln!("Solving challenge");
+    let solution = rsa_vdf::UnsolvedVDF::eval(&challenge);
+    let solution = serde_json::to_vec(&solution).context("serialize solution")?;
+    eprintln!("Challenge solved. Sending it to server");
+
+    let response = server
+        .obtain_server_secret_share(Request::new(
+            proto::beneficiary::ObtainServerSecretShareRequest {
+                public_key: args.public_key,
+                client_public_share: client_public_share_bytes.into(),
+                solved_challenge: Some(solving_challenge),
+                solution,
+            },
+        ))
+        .await
+        .context("claiming share")?
+        .into_inner();
+
+    let server_secret_share: FE =
+        ECScalar::from(&BigInt::from_bytes(&response.server_secret_share));
+    if client_public_share * server_secret_share == public_key_point {
+        println!(
+            "Testator secret share: {}",
+            hex::encode(response.server_secret_share)
+        )
+    } else {
+        bail!("server sent incorrect testator's share")
+    }
+
     Ok(())
 }
