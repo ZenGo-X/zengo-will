@@ -7,5 +7,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &["proto/beneficiary.proto", "proto/testator.proto"],
             &["proto/"],
         )?;
+    tonic_build::configure()
+        .build_server(false)
+        .build_client(true)
+        .out_dir("examples/proto")
+        .compile(
+            &["proto/beneficiary.proto", "proto/testator.proto"],
+            &["proto/"],
+        )?;
     Ok(())
 }
