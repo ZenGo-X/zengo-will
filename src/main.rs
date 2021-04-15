@@ -52,7 +52,35 @@ async fn main() -> anyhow::Result<()> {
         .parse()
         .context("construct testator addr")?;
 
-    let vdf_setup = rsa_vdf::SetupForVDF::public_setup(&args.t.into());
+    let vdf_setup = if args.vdf_params.is_some()
+        && args
+            .vdf_params
+            .as_ref()
+            .map(|p| p.exists())
+            .unwrap_or(false)
+    {
+        println!("Using cached VDF params");
+        let vdf_params = fs::read(
+            args.vdf_params
+                .as_ref()
+                .expect("guaranteed by wrapping if-expression"),
+        )
+        .await
+        .context("read vdf parameters from file")?;
+        serde_json::from_slice(&vdf_params).context("parse vdf params from file")?
+    } else {
+        println!("Computing VDF parameters, this might take a while");
+        let vdf_setup = rsa_vdf::SetupForVDF::public_setup(&args.t.into());
+        println!("VDF parameters are ready");
+        if let Some(vdf_path) = args.vdf_params.as_ref() {
+            let vdf_params =
+                serde_json::to_vec(&vdf_setup).context("serialize vdf setup params")?;
+            fs::write(vdf_path, vdf_params)
+                .await
+                .context("save vdf setup params to file")?
+        }
+        vdf_setup
+    };
 
     if let Some(dir) = args.persistent_store.parent() {
         fs::create_dir_all(dir)

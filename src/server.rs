@@ -249,10 +249,15 @@ where
         let request = request.into_inner();
         let public_key = match P::from_bytes(&request.public_key) {
             Ok(pk) => pk,
-            Err(_) => return Err(Status::invalid_argument("invalid public key")),
+            Err(e) => {
+                return Err(Status::invalid_argument(format!(
+                    "invalid public key: {:?}",
+                    e
+                )))
+            }
         };
         let server_secret_share = BigInt::from_bytes(&request.server_secret_share);
-        if BigInt::zero() <= server_secret_share {
+        if BigInt::zero() >= server_secret_share {
             return Err(Status::invalid_argument("invalid secret share"));
         }
         let server_secret_share = <P::Scalar as ECScalar>::from(&server_secret_share);

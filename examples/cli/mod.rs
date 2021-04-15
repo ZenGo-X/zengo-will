@@ -67,12 +67,12 @@ pub struct BeneficiaryClaim {
 
 #[derive(StructOpt, Debug)]
 pub struct BeneficiaryServer {
-    #[structopt(long, default_value = "127.0.0.1:4949")]
+    #[structopt(long, default_value = "http://127.0.0.1:4949")]
     pub address: String,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct TestatorServer {
-    #[structopt(long, default_value = "127.0.0.1:4950")]
+    #[structopt(long, default_value = "http://127.0.0.1:4950")]
     pub address: String,
 }

@@ -24,5 +24,8 @@ pub struct App {
     pub testator_api_port: u16,
 
     #[structopt(long)]
+    pub vdf_params: Option<PathBuf>,
+
+    #[structopt(long)]
     pub insecure: bool,
 }
