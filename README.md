@@ -13,7 +13,7 @@
 1. Start the Will server
    ```bash
    ./zengo-will --cert ../examples/data/server.pem --key ../examples/data/server.key --testator-ca ../examples/data/client_ca.pem \
-       -t 10 --persistent-store store/ --vdf-params vdf-params.json
+       -t 100000 --persistent-store store/ --vdf-params vdf-params.json
    ```
 
 2. Emulate keygen
