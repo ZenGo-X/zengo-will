@@ -22,6 +22,7 @@ mod server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     let args: cli::App = StructOpt::from_args();
 
     if args.insecure {

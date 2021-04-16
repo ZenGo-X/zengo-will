@@ -18,6 +18,7 @@ mod proto;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     let args: cli::App = StructOpt::from_args();
     match args {
         cli::App::GenShare => emulate_keygen().await,
@@ -37,8 +38,8 @@ async fn emulate_keygen() -> anyhow::Result<()> {
     let beneficiary_secret = FE::new_random();
     let joint_pk = GE::generator() * testator_secret.clone() * beneficiary_secret.clone();
 
-    let testator_secret = testator_secret.to_big_int().to_hex();
-    let beneficiary_secret = beneficiary_secret.to_big_int().to_hex();
+    let testator_secret = add_leading_zero(testator_secret.to_big_int().to_hex());
+    let beneficiary_secret = add_leading_zero(beneficiary_secret.to_big_int().to_hex());
     let joint_pk = hex::encode(&joint_pk.pk_to_key_slice()[1..]);
 
     println!(
@@ -51,16 +52,26 @@ async fn emulate_keygen() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn add_leading_zero(hex: String) -> String {
+    if hex.len() % 2 == 1 {
+        "0".to_owned() + &hex
+    } else {
+        hex
+    }
+}
+
 async fn connect_to_beneficiary_api(
-    endpoint: cli::BeneficiaryServer,
+    mut endpoint: cli::BeneficiaryServer,
 ) -> anyhow::Result<BeneficiaryApiClient<Channel>> {
-    let tls_config = if let Some(will_cert) = endpoint.will_cert {
+    let tls_config = if let Some(will_cert) = endpoint.will_ca {
         let cert = fs::read(will_cert)
             .await
             .context("read Will server certificate")?;
         let cert = Certificate::from_pem(cert);
         Some(ClientTlsConfig::new().ca_certificate(cert))
     } else {
+        eprintln!("WARN: Connecting to Will server over insecure channel");
+        endpoint.address = endpoint.address.replace("https://", "http://");
         None
     };
     let endpoint = Channel::from_shared(endpoint.address).context("invalid beneficiary url")?;
@@ -76,9 +87,9 @@ async fn connect_to_beneficiary_api(
 }
 
 async fn connect_to_testator_api(
-    endpoint: cli::TestatorServer,
+    mut endpoint: cli::TestatorServer,
 ) -> anyhow::Result<TestatorApiClient<Channel>> {
-    let tls_config = match (endpoint.will_cert, endpoint.my_cert, endpoint.my_key) {
+    let tls_config = match (endpoint.will_ca, endpoint.cert, endpoint.key) {
         (Some(will_cert), Some(my_cert), Some(my_key)) => {
             let will_cert = fs::read(will_cert)
                 .await
@@ -95,9 +106,13 @@ async fn connect_to_testator_api(
                     .identity(my_identity),
             )
         }
-        _ => None,
+        _ => {
+            eprintln!("WARN: Connecting to Will server over insecure channel");
+            endpoint.address = endpoint.address.replace("https://", "http://");
+            None
+        }
     };
-    let endpoint = Channel::from_shared(endpoint.address).context("invalid beneficiary url")?;
+    let endpoint = Channel::from_shared(endpoint.address).context("invalid testator url")?;
     let endpoint = match tls_config {
         Some(tls_config) => endpoint.tls_config(tls_config).context("set tls config")?,
         None => endpoint,
@@ -105,7 +120,7 @@ async fn connect_to_testator_api(
     let channel = endpoint
         .connect()
         .await
-        .context("connect to beneficiary server")?;
+        .context("connect to testator server")?;
     Ok(TestatorApiClient::new(channel))
 }
 

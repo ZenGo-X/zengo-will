@@ -68,20 +68,20 @@ pub struct BeneficiaryClaim {
 
 #[derive(StructOpt, Debug)]
 pub struct BeneficiaryServer {
-    #[structopt(long, default_value = "http://127.0.0.1:4949")]
+    #[structopt(long, default_value = "https://localhost:4949")]
     pub address: String,
     #[structopt(long)]
-    pub will_cert: Option<PathBuf>,
+    pub will_ca: Option<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct TestatorServer {
-    #[structopt(long, default_value = "http://127.0.0.1:4950")]
+    #[structopt(long, default_value = "https://localhost:4950")]
     pub address: String,
-    #[structopt(long, requires_all(&["my_cert", "my_key"]))]
-    pub will_cert: Option<PathBuf>,
-    #[structopt(long, requires_all(&["will_cert", "my_key"]))]
-    pub my_cert: Option<PathBuf>,
-    #[structopt(long, requires_all(&["will_cert", "my_cert"]))]
-    pub my_key: Option<PathBuf>,
+    #[structopt(long)] //, requires_all(&["my_cert", "my_key"]))]
+    pub will_ca: Option<PathBuf>,
+    #[structopt(long)] //, requires_all(&["will_cert", "my_key"]))]
+    pub cert: Option<PathBuf>,
+    #[structopt(long)] //, requires_all(&["will_cert", "my_cert"]))]
+    pub key: Option<PathBuf>,
 }
