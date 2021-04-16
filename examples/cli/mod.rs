@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Duration;
 
 use structopt::StructOpt;
@@ -69,10 +70,18 @@ pub struct BeneficiaryClaim {
 pub struct BeneficiaryServer {
     #[structopt(long, default_value = "http://127.0.0.1:4949")]
     pub address: String,
+    #[structopt(long)]
+    pub will_cert: Option<PathBuf>,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct TestatorServer {
     #[structopt(long, default_value = "http://127.0.0.1:4950")]
     pub address: String,
+    #[structopt(long, requires_all(&["my_cert", "my_key"]))]
+    pub will_cert: Option<PathBuf>,
+    #[structopt(long, requires_all(&["will_cert", "my_key"]))]
+    pub my_cert: Option<PathBuf>,
+    #[structopt(long, requires_all(&["will_cert", "my_cert"]))]
+    pub my_key: Option<PathBuf>,
 }

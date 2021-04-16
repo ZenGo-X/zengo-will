@@ -1,7 +1,8 @@
 use anyhow::{anyhow, bail, Context};
 use structopt::StructOpt;
 
-use tonic::transport::Channel;
+use tokio::fs;
+use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity};
 use tonic::Request;
 
 use curv::arithmetic::Converter;
@@ -53,8 +54,21 @@ async fn emulate_keygen() -> anyhow::Result<()> {
 async fn connect_to_beneficiary_api(
     endpoint: cli::BeneficiaryServer,
 ) -> anyhow::Result<BeneficiaryApiClient<Channel>> {
-    let channel = Channel::from_shared(endpoint.address)
-        .context("invalid beneficiary url")?
+    let tls_config = if let Some(will_cert) = endpoint.will_cert {
+        let cert = fs::read(will_cert)
+            .await
+            .context("read Will server certificate")?;
+        let cert = Certificate::from_pem(cert);
+        Some(ClientTlsConfig::new().ca_certificate(cert))
+    } else {
+        None
+    };
+    let endpoint = Channel::from_shared(endpoint.address).context("invalid beneficiary url")?;
+    let endpoint = match tls_config {
+        Some(tls_config) => endpoint.tls_config(tls_config).context("set tls config")?,
+        None => endpoint,
+    };
+    let channel = endpoint
         .connect()
         .await
         .context("connect to beneficiary server")?;
@@ -64,8 +78,31 @@ async fn connect_to_beneficiary_api(
 async fn connect_to_testator_api(
     endpoint: cli::TestatorServer,
 ) -> anyhow::Result<TestatorApiClient<Channel>> {
-    let channel = Channel::from_shared(endpoint.address)
-        .context("invalid beneficiary url")?
+    let tls_config = match (endpoint.will_cert, endpoint.my_cert, endpoint.my_key) {
+        (Some(will_cert), Some(my_cert), Some(my_key)) => {
+            let will_cert = fs::read(will_cert)
+                .await
+                .context("read Will server certificate")?;
+            let my_cert = fs::read(my_cert).await.context("read my certificate")?;
+            let my_key = fs::read(my_key).await.context("read my private key")?;
+
+            let will_cert = Certificate::from_pem(will_cert);
+            let my_identity = Identity::from_pem(my_cert, my_key);
+
+            Some(
+                ClientTlsConfig::new()
+                    .ca_certificate(will_cert)
+                    .identity(my_identity),
+            )
+        }
+        _ => None,
+    };
+    let endpoint = Channel::from_shared(endpoint.address).context("invalid beneficiary url")?;
+    let endpoint = match tls_config {
+        Some(tls_config) => endpoint.tls_config(tls_config).context("set tls config")?,
+        None => endpoint,
+    };
+    let channel = endpoint
         .connect()
         .await
         .context("connect to beneficiary server")?;
