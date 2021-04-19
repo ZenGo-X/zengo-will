@@ -1112,6 +1112,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pem"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd56cbd21fea48d0c440b41cd69c589faacade08c992d9a54e471b79d0fd13eb"
+dependencies = [
+ "base64",
+ "once_cell",
+ "regex",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1458,6 +1469,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77d416b86801d23dde1aa643023b775c3a462efc0ed96443add11546cdf1dca8"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "rcgen"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e80a701a04edd9cab874a3d59323bebe24c9a92dd602088c78da83732066d1b"
+dependencies = [
+ "chrono",
+ "pem",
+ "ring",
+ "yasna",
 ]
 
 [[package]]
@@ -2292,6 +2315,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
+name = "yasna"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0de7bff972b4f2a06c85f6d8454b09df153af7e3a4ec2aac81db1b105b684ddb"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "zengo-will"
 version = "0.1.0"
 dependencies = [
@@ -2303,9 +2335,12 @@ dependencies = [
  "hex 0.4.3",
  "lazy_static",
  "parse_duration",
+ "pem",
  "prost",
+ "rcgen",
  "ring",
  "rsa-vdf",
+ "rustls",
  "serde",
  "serde_json",
  "sled",
@@ -2313,9 +2348,12 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "tokio-rustls",
  "tonic",
  "tonic-build",
+ "tracing",
  "tracing-subscriber",
+ "webpki",
 ]
 
 [[package]]

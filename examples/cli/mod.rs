@@ -10,6 +10,7 @@ pub enum App {
     Testator(TestatorCmd),
     Beneficiary(BeneficiaryCmd),
     GenShare,
+    GetCert(Server),
 }
 
 #[derive(StructOpt, Debug)]
@@ -67,9 +68,19 @@ pub struct BeneficiaryClaim {
 }
 
 #[derive(StructOpt, Debug)]
+pub struct Server {
+    #[structopt(long, default_value = "127.0.0.1:4949")]
+    pub address: String,
+    #[structopt(long, default_value = "will.zengo.com")]
+    pub hostname: String,
+}
+
+#[derive(StructOpt, Debug)]
 pub struct BeneficiaryServer {
     #[structopt(long, default_value = "https://localhost:4949")]
     pub address: String,
+    #[structopt(long)]
+    pub hostname: Option<String>,
     #[structopt(long)]
     pub will_ca: Option<PathBuf>,
 }
@@ -78,6 +89,8 @@ pub struct BeneficiaryServer {
 pub struct TestatorServer {
     #[structopt(long, default_value = "https://localhost:4950")]
     pub address: String,
+    #[structopt(long)]
+    pub hostname: Option<String>,
     #[structopt(long)] //, requires_all(&["my_cert", "my_key"]))]
     pub will_ca: Option<PathBuf>,
     #[structopt(long)] //, requires_all(&["will_cert", "my_key"]))]

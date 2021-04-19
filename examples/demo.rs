@@ -12,6 +12,8 @@ use curv::BigInt;
 
 use proto::beneficiary::beneficiary_api_client::BeneficiaryApiClient;
 use proto::testator::testator_api_client::TestatorApiClient;
+use rustls::Session;
+use std::sync::Arc;
 
 mod cli;
 mod proto;
@@ -22,6 +24,7 @@ async fn main() -> anyhow::Result<()> {
     let args: cli::App = StructOpt::from_args();
     match args {
         cli::App::GenShare => emulate_keygen().await,
+        cli::App::GetCert(args) => get_cert(args).await,
         cli::App::Testator(cli::TestatorCmd::SaveShare(args)) => testator_save_share(args).await,
         cli::App::Testator(cli::TestatorCmd::SendKeepalive(args)) => {
             testator_send_keepalive(args).await
@@ -52,6 +55,51 @@ async fn emulate_keygen() -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn get_cert(server: cli::Server) -> anyhow::Result<()> {
+    let dns_name = webpki::DNSNameRef::try_from_ascii_str(&server.hostname)
+        .context("server host is invalid dns name")?;
+
+    let mut config = rustls::ClientConfig::new();
+    config
+        .dangerous()
+        .set_certificate_verifier(Arc::new(NoCertificateVerification));
+    let connector: tokio_rustls::TlsConnector = Arc::new(config).into();
+
+    let connection = tokio::net::TcpStream::connect(server.address)
+        .await
+        .context("connect to server")?;
+    let connection = connector
+        .connect(dns_name, connection)
+        .await
+        .context("perform tls handshake")?;
+    let (_io, session) = connection.get_ref();
+    for cert in session
+        .get_peer_certificates()
+        .context("no cert provided")?
+    {
+        let pem = pem::encode(&pem::Pem {
+            tag: "CERTIFICATE".into(),
+            contents: cert.as_ref().to_vec(),
+        });
+        println!("{}", pem);
+    }
+    Ok(())
+}
+
+pub struct NoCertificateVerification;
+
+impl rustls::ServerCertVerifier for NoCertificateVerification {
+    fn verify_server_cert(
+        &self,
+        _roots: &rustls::RootCertStore,
+        _presented_certs: &[rustls::Certificate],
+        _dns_name: webpki::DNSNameRef<'_>,
+        _ocsp: &[u8],
+    ) -> Result<rustls::ServerCertVerified, rustls::TLSError> {
+        Ok(rustls::ServerCertVerified::assertion())
+    }
+}
+
 fn add_leading_zero(hex: String) -> String {
     if hex.len() % 2 == 1 {
         "0".to_owned() + &hex
@@ -68,7 +116,13 @@ async fn connect_to_beneficiary_api(
             .await
             .context("read Will server certificate")?;
         let cert = Certificate::from_pem(cert);
-        Some(ClientTlsConfig::new().ca_certificate(cert))
+        let config = ClientTlsConfig::new().ca_certificate(cert);
+        let config = if let Some(hostname) = endpoint.hostname {
+            config.domain_name(hostname)
+        } else {
+            config
+        };
+        Some(config)
     } else {
         eprintln!("WARN: Connecting to Will server over insecure channel");
         endpoint.address = endpoint.address.replace("https://", "http://");
@@ -100,11 +154,15 @@ async fn connect_to_testator_api(
             let will_cert = Certificate::from_pem(will_cert);
             let my_identity = Identity::from_pem(my_cert, my_key);
 
-            Some(
-                ClientTlsConfig::new()
-                    .ca_certificate(will_cert)
-                    .identity(my_identity),
-            )
+            let config = ClientTlsConfig::new()
+                .ca_certificate(will_cert)
+                .identity(my_identity);
+            let config = if let Some(hostname) = endpoint.hostname {
+                config.domain_name(hostname)
+            } else {
+                config
+            };
+            Some(config)
         }
         _ => {
             eprintln!("WARN: Connecting to Will server over insecure channel");

@@ -12,11 +12,17 @@
 
 1. Start the Will server
    ```bash
-   ./zengo-will --cert ../examples/data/server.pem --key ../examples/data/server.key --testator-ca ../examples/data/client_ca.pem \
+   ./zengo-will --generate-self-signed will.zengo.com \
+       --testator-ca ../examples/data/client_ca.pem \
        -t 100000 --persistent-store store/ --vdf-params vdf-params.json
    ```
 
-2. Emulate keygen
+1. Retrieve Will server certificate:
+   ```bash
+   ./demo get-cert --address 127.0.0.1:4949 --hostname will.zengo.com > server.pem
+   ```
+
+1. Emulate keygen
    ```bash
    ./demo gen-share
    ```
@@ -30,15 +36,16 @@
    
    We denote Beneficiary's secret share as $BS, Testator's secret share as $TS, and their joint public key as $PK.
    
-3. Testator sends to Will its share
+1. Testator sends to Will its share
    ```bash
-   ./demo testator save-share --cert ../examples/data/client1.pem --key ../examples/data/client1.key --will-ca ../examples/data/ca.pem \
+   ./demo testator save-share --cert ../examples/data/client1.pem --key ../examples/data/client1.key \
+       --will-ca server.pem --hostname will.zengo.com \
        --public-key $PK --secret-share $TS
    ```
    
-4. Beneficiary verifies that Will received a share
+1. Beneficiary verifies that Will received a share
    ```bash
-   ./demo beneficiary verify --will-ca ../examples/data/ca.pem \
+   ./demo beneficiary verify --will-ca server.pem --hostname will.zengo.com \
        --secret-share $BS --public-key $PK
    ```
    
@@ -47,23 +54,26 @@
    Server proofed that it owns a valid share
    ```
 
-5. Testator starts sending keepalive messages to Will:
+1. Testator starts sending keepalive messages to Will:
    ```bash
-   ./demo testator send-keepalive --cert ../examples/data/client1.pem --key ../examples/data/client1.key --will-ca ../examples/data/ca.pem \
+   ./demo testator send-keepalive --cert ../examples/data/client1.pem --key ../examples/data/client1.key \
+       --will-ca server.pem --hostname will.zengo.com \
        --every 1s
    ```
    
-6. Beneficiary tries to obtain testator share, but unsuccessfully as testator sends keepalive messages:
+1. Beneficiary tries to obtain testator share, but unsuccessfully as testator sends keepalive messages:
    ```bash
-   ./demo beneficiary claim --will-ca ../examples/data/ca.pem --secret-share $BS --public-key $PK
+   ./demo beneficiary claim --will-ca server.pem --hostname will.zengo.com \
+       --secret-share $BS --public-key $PK
    ```
    
    Error message will be printed in the terminal saying testator is alive.
 
-7. Kill testator by sending Ctrl-C to the terminal from step 5. Now beneficiary is able to claim a counter-party's
+1. Kill testator by sending Ctrl-C to the terminal from step 5. Now beneficiary is able to claim a counter-party's
    secret share:
    ```bash
-   ./demo beneficiary claim --will-ca ../examples/data/ca.pem --secret-share $BS --public-key $PK
+   ./demo beneficiary claim --will-ca server.pem --hostname will.zengo.com \
+       --secret-share $BS --public-key $PK
    ```
 
    Outputs:

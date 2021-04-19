@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use futures::future::FutureExt;
 use tokio::fs;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
+use tracing::{info, warn};
 
 use structopt::StructOpt;
 
@@ -26,16 +27,26 @@ async fn main() -> anyhow::Result<()> {
     let args: cli::App = StructOpt::from_args();
 
     if args.insecure {
-        eprintln!("WARN! Running in insecure mode")
+        warn!("Running in insecure mode")
     }
 
-    let server_identity = match (args.cert, args.key) {
-        (Some(cert), Some(key)) => {
-            let cert = fs::read(cert).await.context("read server certificate")?;
-            let key = fs::read(key).await.context("read server private key")?;
-            Some(Identity::from_pem(cert, key))
+    let server_identity = if !args.generate_self_signed.is_empty() {
+        let certificate = rcgen::generate_simple_self_signed(args.generate_self_signed)
+            .context("generate self signed certificate")?;
+        let cert = certificate
+            .serialize_pem()
+            .context("serialize self signed certificate")?;
+        let key = certificate.serialize_private_key_pem();
+        Some(Identity::from_pem(cert, key))
+    } else {
+        match (args.cert, args.key) {
+            (Some(cert), Some(key)) => {
+                let cert = fs::read(cert).await.context("read server certificate")?;
+                let key = fs::read(key).await.context("read server private key")?;
+                Some(Identity::from_pem(cert, key))
+            }
+            _ => None,
         }
-        _ => None,
     };
 
     let testator_ca = match args.testator_ca {
@@ -60,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
             .map(|p| p.exists())
             .unwrap_or(false)
     {
-        println!("Using cached VDF params");
+        info!("Using cached VDF params");
         let vdf_params = fs::read(
             args.vdf_params
                 .as_ref()
@@ -70,9 +81,9 @@ async fn main() -> anyhow::Result<()> {
         .context("read vdf parameters from file")?;
         serde_json::from_slice(&vdf_params).context("parse vdf params from file")?
     } else {
-        println!("Computing VDF parameters, this might take a while");
+        info!("Computing VDF parameters, this might take a while");
         let vdf_setup = rsa_vdf::SetupForVDF::public_setup(&args.t.into());
-        println!("VDF parameters are ready");
+        info!("VDF parameters are ready");
         if let Some(vdf_path) = args.vdf_params.as_ref() {
             let vdf_params =
                 serde_json::to_vec(&vdf_setup).context("serialize vdf setup params")?;
@@ -127,17 +138,17 @@ async fn main() -> anyhow::Result<()> {
     futures::pin_mut!(testator_server);
     futures::pin_mut!(ctrl_c);
 
-    println!("Server started. Use Ctrl-C to exit.");
+    info!("Server started. Use Ctrl-C to exit.");
     for _ in 0u8..2 {
         let (which_server, result): (&str, Result<(), tonic::transport::Error>) = futures::select! {
             result = beneficiary_server => ("beneficiary", result),
             result = testator_server => ("testator", result),
             _ = ctrl_c => {
-                eprintln!("Execution terminated by Ctrl-C");
+                warn!("Execution terminated by Ctrl-C");
                 break
             }
         };
-        eprintln!("{} server terminated: {:?}", which_server, result)
+        warn!("{} server terminated: {:?}", which_server, result)
     }
 
     Ok(())
