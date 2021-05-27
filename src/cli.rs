@@ -10,9 +10,9 @@ pub struct App {
     #[structopt(long)]
     pub persistent_store: PathBuf,
 
-    #[structopt(long, required_unless = "insecure")]
+    #[structopt(long, conflicts_with_all(&["insecure", "generate_self_signed"]))]
     pub cert: Option<PathBuf>,
-    #[structopt(long, required_unless = "insecure")]
+    #[structopt(long, conflicts_with_all(&["insecure", "generate_self_signed"]))]
     pub key: Option<PathBuf>,
 
     #[structopt(long, required_unless = "insecure")]
@@ -24,5 +24,10 @@ pub struct App {
     pub testator_api_port: u16,
 
     #[structopt(long)]
+    pub vdf_params: Option<PathBuf>,
+
+    #[structopt(long, conflicts_with = "generate_self_singed")]
     pub insecure: bool,
+    #[structopt(long)]
+    pub generate_self_signed: Vec<String>,
 }
